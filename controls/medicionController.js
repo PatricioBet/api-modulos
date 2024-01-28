@@ -7,9 +7,6 @@ const { validationResult } = require("express-validator");
 
 
 class MedicionController {
-    async guardar(req, res) {
-        
-    }
 
     async listar(req, res) {
     

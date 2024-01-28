@@ -93,5 +93,7 @@ router.post('/dispositivo', [
   body('ip', 'Ingrese la IP asignada al dispositivo').trim().exists().not().isEmpty()
 ], dispositivoController.guardar);
 
+router.get('/listar', dispositivoController.listar);
+router.get('/activos', dispositivoController.listarActivos);
 
 module.exports = router;

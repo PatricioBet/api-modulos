@@ -1,68 +1,92 @@
 #!/usr/bin/env node
 
-/**
- * Module dependencies.
- */
+const app = require('../app');
+const debug = require('debug')('pis-grupo-c-backend:server');
+const http = require('http');
+const models = require('../models/');
+const cron = require('cron');
+const axios = require('axios');
 
-var app = require('../app');
-var debug = require('debug')('pis-grupo-c-backend:server');
-var http = require('http');
+let server;
 
-/**
- * Get port from environment and store in Express.
- */
+async function initializeDatabase() {
+  try {
+    await models.sequelize.sync();
+    console.log('La base de datos se ha conectado correctamente');
+  } catch (error) {
+    console.error('Error al conectar con la base de datos:', error);
+    process.exit(1);
+  }
+}
 
-var port = normalizePort(process.env.PORT || '3004');
-app.set('port', port);
+initializeDatabase().then(() => {
+  const port = normalizePort(process.env.PORT || '3004');
+  app.set('port', port);
 
-/**
- * Create HTTP server.
- */
+  server = http.createServer(app);
 
-var server = http.createServer(app);
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+  const cronJob = new cron.CronJob('*/30 * * * *', async () => {
+    try {
+      const dispositivosActivos = await models.dispositivo.findAll({
+        where: { activo: true },
+      });
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+      for (const dispositivo of dispositivosActivos) {
+        const url = `http://${dispositivo.ip}/ruta-de-tu-api`;
 
-/**
- * Normalize a port into a number, string, or false.
- */
+        try {
+          const response = await axios.get(url);
+
+          // Lógica para guardar en la tabla de mediciones
+          const medicionData = {
+            uv: response.data.uv, // Ajusta según la estructura de la respuesta
+            fecha: new Date(), // Puedes ajustar la fecha según lo que necesites
+            dispositivoId: dispositivo.id,
+          };
+
+          await models.medicion.create(medicionData);
+
+          console.log(`Datos de ${dispositivo.nombre} registrados con éxito`);
+        } catch (error) {
+          console.error(`Error al hacer la petición GET a ${url}:`, error);
+          
+          // Actualiza el dispositivo a inactivo si hay un error en la petición
+          await dispositivo.update({ activo: false });
+        }
+      }
+    } catch (error) {
+      console.error('Error al ejecutar la tarea cron:', error);
+    }
+  });
+
+  cronJob.start();
+});
 
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+  const port = parseInt(val, 10);
 
   if (isNaN(port)) {
-    // named pipe
     return val;
   }
 
   if (port >= 0) {
-    // port number
     return port;
   }
 
   return false;
 }
 
-/**
- * Event listener for HTTP server "error" event.
- */
-
 function onError(error) {
   if (error.syscall !== 'listen') {
     throw error;
   }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
-  // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
       console.error(bind + ' requires elevated privileges');
@@ -77,14 +101,8 @@ function onError(error) {
   }
 }
 
-/**
- * Event listener for HTTP server "listening" event.
- */
-
 function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
+  const addr = server.address();
+  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
