@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
         external_id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4 },
         activo: { type: DataTypes.BOOLEAN, defaultValue: true }
     }, { freezeTableName: true });
+    
+    Dispositivo.associate = function (models) {
+        Dispositivo.hasMany(models.medicion, { foreignKey: 'dispositivoId' });
+    };
 
     return Dispositivo;
 };

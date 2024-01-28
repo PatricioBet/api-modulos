@@ -1,6 +1,7 @@
 'use strict';
 const { validationResult } = require("express-validator");
 const { sequelize, dispositivo } = require('../models');
+const jwt = require('jsonwebtoken');
 
 class MedicionController {
     async guardar(req, res) {
@@ -65,6 +66,24 @@ class MedicionController {
             console.error(error);
             res.status(500).json({ msg: "Error interno del servidor", code: 500 });
         }
+    }
+
+    async generarTokenDispositivo(req, res) {
+      require('dotenv').config();
+      const payload = {
+        rol: 'DISPOSITIVO'
+      };
+      const token = jwt.sign(payload, process.env.KEY);
+      res.status(200).json({ msg: "Token de dispositivo generado", code: 200, token });
+    }
+
+    async generarTokenBackend(req, res) {
+      require('dotenv').config();
+      const payload = {
+        rol: 'BACKEND'
+      };
+      const token = jwt.sign(payload, process.env.KEY);
+      res.status(200).json({ msg: "Token de dispositivo generado", code: 200, token });
     }
 }
 

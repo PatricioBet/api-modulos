@@ -36,14 +36,13 @@ initializeDatabase().then(() => {
       });
 
       for (const dispositivo of dispositivosActivos) {
-        const url = `http://${dispositivo.ip}/ruta-de-tu-api`;
-
+        const url = `http://${dispositivo.ip}/radiacion`;
+        
         try {
           const response = await axios.get(url);
-
-          // Lógica para guardar en la tabla de mediciones
+          console.log(response.data.info)
           const medicionData = {
-            uv: response.data.uv, // Ajusta según la estructura de la respuesta
+            uv: parseFloat(response.data.info.uv), 
             fecha: new Date(), // Puedes ajustar la fecha según lo que necesites
             dispositivoId: dispositivo.id,
           };
