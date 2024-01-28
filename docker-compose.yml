@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  # Servicio de la base de datos PostgreSQL
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: api_sexto
+      POSTGRES_USER: api_sexto
+      POSTGRES_PASSWORD: api_sexto
+    ports:
+      - "85:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data  # Volumen para persistir datos de PostgreSQL
+  
+  # Servicio para tu aplicación Node.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      DATABASE_URL: postgres://api_sexto:api_sexto@postgres:5432/api_sexto
+    depends_on:
+      - postgres
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./ruta_local_app:/ruta_contenedor_app  # Volumen para persistir datos de tu aplicación
+
+volumes:
+  pg_data:  # Volumen para PostgreSQL
+  ruta_local_app:  # Volumen para la aplicación Node.js

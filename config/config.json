@@ -3,7 +3,7 @@
         "username": "api_sexto",
         "password": "api_sexto",
         "database": "api_sexto",
-        "host": "127.0.0.1",
+        "host": "postgres",
         "dialect": "postgres",
         "operatorsAliases": false
     }
