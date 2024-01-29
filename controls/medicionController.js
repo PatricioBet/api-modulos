@@ -12,10 +12,10 @@ class MedicionController {
         res.status(400).json({ msg: "Datos no encontrados", code: 400 });
         return;
       }
-  
+
       // Obtener las fechas de inicio y fin desde el cuerpo de la solicitud
       const { fechaInicio, fechaFin } = req.body;
-  
+
       // Realizar la consulta para obtener el promedio de mediciones por día
       const promedioMediciones = await models.medicion.findAll({
         attributes: [
@@ -39,7 +39,7 @@ class MedicionController {
           [models.sequelize.fn('date_trunc', 'day', models.sequelize.col('fecha')), 'ASC']
         ]
       });
-  
+
       // Enviar la respuesta con los resultados
       res.status(200).json({ promedioMediciones, code: 200 });
     } catch (error) {
@@ -48,7 +48,7 @@ class MedicionController {
       res.status(500).json({ msg: "Error interno del servidor", code: 500 });
     }
   }
-  
+
 
   async promedioPorSemanas(req, res) {
     try {
@@ -58,10 +58,10 @@ class MedicionController {
         res.status(400).json({ msg: "Datos no encontrados", code: 400 });
         return;
       }
-  
+
       // Obtener las fechas de inicio y fin desde el cuerpo de la solicitud
       const { fechaInicio, fechaFin } = req.body;
-  
+
       // Realizar la consulta para obtener el promedio de mediciones por semana
       const promedioMediciones = await models.medicion.findAll({
         attributes: [
@@ -85,7 +85,7 @@ class MedicionController {
           [models.sequelize.fn('date_trunc', 'week', models.sequelize.col('fecha')), 'ASC']
         ]
       });
-  
+
       // Enviar la respuesta con los resultados
       res.status(200).json({ promedioMediciones, code: 200 });
     } catch (error) {
@@ -94,7 +94,7 @@ class MedicionController {
       res.status(500).json({ msg: "Error interno del servidor", code: 500 });
     }
   }
-  
+
 
   async promedioPorMeses(req, res) {
     try {
@@ -103,9 +103,9 @@ class MedicionController {
         res.status(400).json({ msg: "Datos no encontrados", code: 400 });
         return;
       }
-  
+
       const { fechaInicio, fechaFin } = req.body;
-  
+
       const promedioMediciones = await models.medicion.findAll({
         attributes: [
           [models.sequelize.fn('AVG', models.sequelize.col('uv')), 'promedio'],
@@ -119,16 +119,16 @@ class MedicionController {
         group: [models.sequelize.fn('date_trunc', 'month', models.sequelize.col('fecha'))],
         order: [[models.sequelize.fn('date_trunc', 'month', models.sequelize.col('fecha')), 'ASC']]
       });
-  
+
       res.status(200).json({ promedioMediciones, code: 200 });
     } catch (error) {
       console.error(error);
       res.status(500).json({ msg: "Error interno del servidor", code: 500 });
     }
   }
-  
-  
-  
+
+
+
 
   async medicionDispositivosActivos(req, res) {
     try {
@@ -159,33 +159,67 @@ class MedicionController {
 
   async promedioMedicion(req, res) {
     try {
-        const promedioUltimasMediciones = await models.medicion.findOne({
-            attributes: [
-                [models.sequelize.fn('AVG', models.sequelize.col('uv')), 'promedio'],
-            ],
-            include: [{
-                model: models.dispositivo,
-                attributes: [],
-                where: {
-                    activo: true // Asumiendo que existe una columna "activo" en la tabla dispositivo
-                }
-            }],
-            where: {
-                fecha: {
-                    [Op.not]: null // Excluye mediciones sin fecha
-                }
-            },
-            raw: true, // Retorna solo los resultados, sin metadata
-        });
+      const promedioUltimasMediciones = await models.medicion.findOne({
+        attributes: [
+          [models.sequelize.fn('AVG', models.sequelize.col('uv')), 'promedio'],
+        ],
+        include: [{
+          model: models.dispositivo,
+          attributes: [],
+          where: {
+            activo: true // Asumiendo que existe una columna "activo" en la tabla dispositivo
+          }
+        }],
+        where: {
+          fecha: {
+            [Op.not]: null // Excluye mediciones sin fecha
+          }
+        },
+        raw: true, // Retorna solo los resultados, sin metadata
+      });
 
-        res.status(200).json({ promedioUltimasMediciones, code: 200 });
+      res.status(200).json({ promedioUltimasMediciones, code: 200 });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: "Error interno del servidor", code: 500 });
+      console.error(error);
+      res.status(500).json({ msg: "Error interno del servidor", code: 500 });
     }
-}
+  }
 
+  async medicionesFechas(req, res) {
+    try {
+      const { fechaInicio, fechaFin } = req.body;
 
+      if (!fechaInicio || !fechaFin) {
+        return res.status(400).json({ msg: 'Se requieren fechas de inicio y fin', code: 400 });
+      }
+
+      const fechaInicioLimite = new Date(fechaInicio);
+      fechaInicioLimite.setDate(fechaInicioLimite.getDate() - 30); // Restar 30 días al inicio
+
+      const fechaFinLimite = new Date(fechaFin);
+
+      const mediciones = await models.medicion.findAll({
+        where: {
+          fecha: {
+            [Op.between]: [fechaInicioLimite, fechaFinLimite],
+          },
+        },
+        include: [{
+          model: models.dispositivo,
+          attributes: [],
+          where: {
+            activo: true,
+          },
+        }],
+        raw: true,
+      });
+
+      res.status(200).json({ mediciones, code: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: 'Error interno del servidor', code: 500 });
+    }
+  }
 
 }
 

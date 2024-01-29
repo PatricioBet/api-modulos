@@ -108,8 +108,15 @@ router.post('/medicionMes', authBackend,[
   body('fechaFin', 'Ingrese la fecha de fin').trim().exists().not().isEmpty()
 ], medicionController.promedioPorMeses);
 
+router.post('/medicionFechas', authBackend,[
+  body('fechaInicio', 'Ingrese la fecha de inicio').trim().exists().not().isEmpty(),
+  body('fechaFin', 'Ingrese la fecha de fin').trim().exists().not().isEmpty()
+], medicionController.medicionesFechas);
+
 router.get('/medicionDispositivos', medicionController.medicionDispositivosActivos);
 router.get('/medicionPromedio', medicionController.promedioMedicion);
+
+
 
 router.get('/tokenDispositivo', dispositivoController.generarTokenDispositivo)
 router.get('/tokenBackend', dispositivoController.generarTokenBackend)
