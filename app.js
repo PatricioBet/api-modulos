@@ -19,25 +19,71 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(cors({origin:"*"}));
+app.use(cors({ origin: "*" }));
 
 app.use('/', indexRouter);
 app.use('/api', usersRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+
+  // Renderiza la página de error de manera similar a la página principal
+  const imagePath = '/archivos/logoComputacion.jpg';
+  const imageTag = `<img src="${imagePath}" alt="Página no existe">`;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Error ${err.status || 500}</title>
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #f4f4f4;
+        }
+        header {
+          background-color: #d9534f;
+          color: #fff;
+          padding: 10px;
+          text-align: center;
+        }
+        h1 {
+          margin-top: 20px;
+          text-align: center;
+        }
+        img {
+          display: block;
+          margin: 20px auto;
+          max-width: 100%;
+        }
+      </style>
+    </head>
+    <body>
+      <header>
+        <h1>Error ${err.status || 500}</h1>
+      </header>
+      ${imageTag}
+    </body>
+    </html>
+  `;
+
+  // Envía la respuesta de error renderizada
+  res.send(htmlContent);
 });
 
 module.exports = app;
