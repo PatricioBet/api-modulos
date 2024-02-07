@@ -19,9 +19,11 @@ async function initializeDatabase() {
   }
 }
 
+const port = normalizePort(process.env.PORT || '3004');
+app.set('port', port);
+
 initializeDatabase().then(() => {
-  const port = normalizePort(process.env.PORT || '3004');
-  app.set('port', port);
+
 
   server = http.createServer(app);
 
@@ -34,26 +36,30 @@ initializeDatabase().then(() => {
       const dispositivosActivos = await models.dispositivo.findAll({
         where: { activo: true },
       });
-
+  
       for (const dispositivo of dispositivosActivos) {
         const url = `http://${dispositivo.ip}/radiacion`;
-        
+  
         try {
           const response = await axios.get(url);
-          console.log(response.data.info)
+          console.log(response.data.info);
+  
+          // Obtener la hora actual en GMT-5 (hora de Ecuador)
+          const fechaEcuador = new Date();
+          fechaEcuador.setHours(fechaEcuador.getHours() - 5);
+  
           const medicionData = {
             uv: parseFloat(response.data.info.uv), 
-            fecha: new Date(),
+            fecha: fechaEcuador, // Usar la hora de Ecuador como fecha
             dispositivoId: dispositivo.id,
           };
-
+  
           await models.medicion.create(medicionData);
-
+  
           console.log(`Datos de ${dispositivo.nombre} registrados con éxito`);
         } catch (error) {
           console.error(`Error al hacer la petición GET a ${url}:`, error);
-          
-          await dispositivo.update({ activo: false });
+          //await dispositivo.update({ activo: false });
         }
       }
     } catch (error) {

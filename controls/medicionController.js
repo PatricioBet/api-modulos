@@ -2,6 +2,7 @@
 const models = require('../models');
 const { validationResult } = require("express-validator");
 const { Op } = require('sequelize');
+const { sequelize, dispositivo, medicion } = require('../models');
 
 class MedicionController {
   async promedioPorDias(req, res) {
@@ -127,9 +128,6 @@ class MedicionController {
     }
   }
 
-
-
-
   async medicionDispositivosActivos(req, res) {
     try {
       const ultimasMediciones = await models.dispositivo.findAll({
@@ -188,20 +186,15 @@ class MedicionController {
   async medicionesFechas(req, res) {
     try {
       const { fechaInicio, fechaFin } = req.body;
-
+  
       if (!fechaInicio || !fechaFin) {
         return res.status(400).json({ msg: 'Se requieren fechas de inicio y fin', code: 400 });
       }
-
-      const fechaInicioLimite = new Date(fechaInicio);
-      fechaInicioLimite.setDate(fechaInicioLimite.getDate() - 30); // Restar 30 días al inicio
-
-      const fechaFinLimite = new Date(fechaFin);
-
+  
       const mediciones = await models.medicion.findAll({
         where: {
           fecha: {
-            [Op.between]: [fechaInicioLimite, fechaFinLimite],
+            [Op.between]: [fechaInicio, fechaFin], // Utiliza directamente las fechas proporcionadas por el cliente
           },
         },
         include: [{
@@ -211,9 +204,9 @@ class MedicionController {
             activo: true,
           },
         }],
-        raw: true,
+        attributes: ['uv', 'fecha', 'dispositivoId'],
       });
-
+  
       res.status(200).json({ mediciones, code: 200 });
     } catch (error) {
       console.error(error);
@@ -221,6 +214,39 @@ class MedicionController {
     }
   }
 
+  async guardarMedicion(req, res) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({ msg: "Datos no encontrados", code: 400 });
+        return;
+      }
+  
+      const { identificador, uv } = req.body;
+      const fecha = new Date();
+      fecha.setHours(fecha.getHours() - 5);
+  
+      // Buscar el dispositivo correspondiente al identificador
+      const dispositivoEncontrado = await dispositivo.findOne({ where: { identificador } });
+  
+      if (!dispositivoEncontrado) {
+        res.status(400).json({ msg: "Dispositivo no encontrado", code: 400 });
+        return;
+      }
+  
+      // Crear la medición asociada al dispositivo encontrado
+      const nuevaMedicion = await medicion.create({ 
+        uv, 
+        fecha, // Suponiendo que fecha es proporcionada por el cliente
+        dispositivoId: dispositivoEncontrado.id 
+      });
+  
+      res.status(200).json({ msg: "Medición guardada exitosamente", code: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: "Error interno del servidor", code: 500 });
+    }
+  }
 }
-
+  
 module.exports = MedicionController;

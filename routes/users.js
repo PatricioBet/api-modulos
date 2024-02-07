@@ -93,6 +93,12 @@ router.get('/listar', dispositivoController.listar);
 router.get('/activos', dispositivoController.listarActivos);
 
 //Mediciones
+
+router.post('/guardarMedicion', authDispositivo, [
+  body('identificador', 'Ingrese la fecha de inicio').exists().not(),
+  body('uv', 'Ingrese la fecha de fin').exists().not()
+], medicionController.guardarMedicion);
+
 router.post('/medicionDia', authBackend, [
   body('fechaInicio', 'Ingrese la fecha de inicio').trim().exists().not().isEmpty(),
   body('fechaFin', 'Ingrese la fecha de fin').trim().exists().not().isEmpty()
@@ -115,8 +121,6 @@ router.post('/medicionFechas', authBackend,[
 
 router.get('/medicionDispositivos', medicionController.medicionDispositivosActivos);
 router.get('/medicionPromedio', medicionController.promedioMedicion);
-
-
 
 router.get('/tokenDispositivo', dispositivoController.generarTokenDispositivo)
 router.get('/tokenBackend', dispositivoController.generarTokenBackend)
